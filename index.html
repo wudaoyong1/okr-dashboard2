@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OKR数据监测看板 - 最终修复版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-link {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
+        }
+
+        .update-time {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .overview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .overview-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .overview-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-icon {
+            font-size: 42px;
+            min-width: 55px;
+            text-align: center;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-content h3 {
+            color: #34495e;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .percentage {
+            color: #34495e;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dimensions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dimension-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+
+        .dimension-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .dimension-header {
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dimension-header h2 {
+            color: black;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .overall-progress {
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .okr-list {
+            padding: 15px 18px;
+        }
+
+        .okr-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .okr-item:hover {
+            background: #e8f4f8;
+            transform: translateX(3px);
+        }
+
+        .okr-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .okr-objective {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .key-results {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .key-result {
+            flex: 1;
+            min-width: 260px;
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .key-result:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .key-result-text {
+            color: #555;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .key-result-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .kr-progress-bar {
+            background: #e0e0e0;
+            border-radius: 5px;
+            height: 6px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .kr-progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.8s ease;
+        }
+
+        .kr-percentage {
+            color: #3498db;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* 维度颜色主题 */
+        .business .progress-fill,
+        .business .dimension-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .business .okr-item {
+            border-left-color: #667eea;
+        }
+
+        .evaluation .progress-fill,
+        .evaluation .dimension-header {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .evaluation .okr-item {
+            border-left-color: #f5576c;
+        }
+
+        .evaluation .kr-percentage {
+            color: #f5576c;
+        }
+
+        .hr .progress-fill,
+        .hr .dimension-header {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .hr .okr-item {
+            border-left-color: #4facfe;
+        }
+
+        .hr .kr-percentage {
+            color: #4facfe;
+        }
+
+        .safety .progress-fill,
+        .safety .dimension-header {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .safety .okr-item {
+            border-left-color: #43e97b;
+        }
+
+        .safety .kr-percentage {
+            color: #43e97b;
+        }
+
+        .quality .progress-fill,
+        .quality .dimension-header {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+        }
+
+        .quality .okr-item {
+            border-left-color: #fa709a;
+        }
+
+        .quality .kr-percentage {
+            color: #fa709a;
+        }
+
+        /* 汇总表格样式 */
+        .summary-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .summary-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .summary-table th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #5a5fd6;
+            white-space: nowrap;
+        }
+
+        .summary-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .summary-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .summary-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .summary-table .dimension-name {
+            background: #f0f4ff;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        .summary-table .indicator-name {
+            font-weight: 500;
+            color: #555;
+            text-align: left;
+            padding-left: 15px;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .summary-table .h1-target {
+            background: #fff3cd;
+            font-weight: 600;
+            color: #856404;
+        }
+
+        .summary-table .month-header {
+            background: #e3f2fd;
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .summary-table .data-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .summary-table .data-cell.good {
+            color: #28a745;
+        }
+
+        .summary-table .data-cell.warning {
+            color: #ffc107;
+        }
+
+        .summary-table .data-cell.danger {
+            color: #dc3545;
+        }
+
+        .summary-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .summary-table-container thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .summary-table-container thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 10;
+        }
+
+        /* 图表容器样式 */
+        .chart-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 130px;
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 6px;
+        }
+
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .key-result-details {
+            margin-top: 10px;
+        }
+
+        .chart-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            justify-content: center;
+        }
+
+        .chart-toggle button {
+            padding: 4px 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
+        }
+
+        .chart-toggle button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .chart-toggle button:hover {
+            background: #e0e0e0;
+        }
+
+        .chart-toggle button.active:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="dashboard-container">
+        <header class="header" id="dashboard-header">
+            <h1 id="dashboard-title">OKR数据监测看板 - 2026年H1</h1>
+            <div class="header-info" id="header-info">
+                <a href="admin.html" class="btn-link">管理数据</a>
+                <button class="btn-export" onclick="exportReport()">导出报告</button>
+                <button class="btn-export" onclick="clearCache()" style="background: linear-gradient(135deg, #fa709a, #fee140);">清除缓存</button>
+                <span class="update-time">更新时间：<span id="updateTime"></span></span>
+            </div>
+        </header>
+
+        <div class="overview-section">
+            <div class="overview-card">
+                <div class="card-icon business">💼</div>
+                <div class="card-content">
+                    <h3>经营维度</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="business-overall-progress"></div>
+                    </div>
+                    <p class="percentage" id="business-overall-percentage">0%</p>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon evaluation">📊</div>
+                <div class="card-content">
+                    <h3>测评维度</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="evaluation-overall-progress"></div>
+                    </div>
+                    <p class="percentage" id="evaluation-overall-percentage">0%</p>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon hr">👥</div>
+                <div class="card-content">
+                    <h3>人资维度</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="hr-overall-progress"></div>
+                    </div>
+                    <p class="percentage" id="hr-overall-percentage">0%</p>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon safety">🛡️</div>
+                <div class="card-content">
+                    <h3>安规维度</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="safety-overall-progress"></div>
+                    </div>
+                    <p class="percentage" id="safety-overall-percentage">0%</p>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon quality">✅</div>
+                <div class="card-content">
+                    <h3>质量维度</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quality-overall-progress"></div>
+                    </div>
+                    <p class="percentage" id="quality-overall-percentage">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 汇总表格 -->
+        <div class="summary-section">
+            <h2 class="summary-title">📊 2026年H1指标达成汇总</h2>
+            <div class="summary-table-container">
+                <table class="summary-table" id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>维度</th>
+                            <th>指标名称</th>
+                            <th>H1目标</th>
+                            <th>1月达成</th>
+                            <th>2月达成</th>
+                            <th>3月达成</th>
+                            <th>4月达成</th>
+                            <th>5月达成</th>
+                            <th>6月达成</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- 动态生成表格内容 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dimensions-section">
+            <div class="dimension-card">
+                <div class="dimension-header business">
+                    <h2>💼 经营维度</h2>
+                    <span class="overall-progress" id="business-dim-progress">0%</span>
+                </div>
+                <div class="okr-list" id="business-okr-list"></div>
+            </div>
+
+            <div class="dimension-card">
+                <div class="dimension-header evaluation">
+                    <h2>📊 测评维度</h2>
+                    <span class="overall-progress" id="evaluation-dim-progress">0%</span>
+                </div>
+                <div class="okr-list" id="evaluation-okr-list"></div>
+            </div>
+
+            <div class="dimension-card">
+                <div class="dimension-header hr">
+                    <h2>👥 人资维度</h2>
+                    <span class="overall-progress" id="hr-dim-progress">0%</span>
+                </div>
+                <div class="okr-list" id="hr-okr-list"></div>
+            </div>
+
+            <div class="dimension-card">
+                <div class="dimension-header safety">
+                    <h2>🛡️ 安规维度</h2>
+                    <span class="overall-progress" id="safety-dim-progress">0%</span>
+                </div>
+                <div class="okr-list" id="safety-okr-list"></div>
+            </div>
+
+            <div class="dimension-card">
+                <div class="dimension-header quality">
+                    <h2>✅ 质量维度</h2>
+                    <span class="overall-progress" id="quality-dim-progress">0%</span>
+                </div>
+                <div class="okr-list" id="quality-okr-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        // 从 localStorage 加载保存的数据
+        function loadSavedData() {
+            const savedData = localStorage.getItem('okrData');
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    // 深度合并数据，保留data.js中的配置（如reverse标记）
+                    deepMerge(okrData, parsedData);
+                    console.log('已加载保存的数据');
+
+                    // 调试：检查骨干稳定性的reverse标记
+                    if (okrData.evaluation && okrData.evaluation.okrs && okrData.evaluation.okrs[0]) {
+                        const keyResults = okrData.evaluation.okrs[0].keyResults;
+                        const stability = keyResults.find(kr => kr.text === '骨干稳定性');
+                        if (stability) {
+                            console.log('骨干稳定性数据:', stability);
+                            console.log('骨干稳定性reverse标记:', stability.reverse);
+                        }
+                    }
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                }
+            } else {
+                console.log('使用data.js中的初始数据');
+            }
+        }
+
+        // 深度合并函数
+        function deepMerge(target, source) {
+            for (const key in source) {
+                if (source.hasOwnProperty(key)) {
+                    if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+                        // 如果是对象，递归合并
+                        if (!target[key]) {
+                            target[key] = {};
+                        }
+                        deepMerge(target[key], source[key]);
+                    } else if (Array.isArray(source[key])) {
+                        // 如果是数组，需要特殊处理
+                        if (Array.isArray(target[key])) {
+                            // 合并数组中的对象
+                            source[key].forEach((sourceItem, index) => {
+                                if (typeof sourceItem === 'object' && sourceItem !== null) {
+                                    if (target[key][index]) {
+                                        deepMerge(target[key][index], sourceItem);
+                                    } else {
+                                        target[key][index] = sourceItem;
+                                    }
+                                } else {
+                                    target[key][index] = sourceItem;
+                                }
+                            });
+                        } else {
+                            target[key] = source[key];
+                        }
+                    } else {
+                        // 如果是基本类型，直接覆盖
+                        target[key] = source[key];
+                    }
+                }
+            }
+        }
+
+        // 清除缓存并重新加载
+        function clearCache() {
+            if (confirm('确定要清除缓存并重新加载数据吗？这将恢复到data.js中的初始数据。')) {
+                localStorage.removeItem('okrData');
+                location.reload();
+            }
+        }
+
+        // 使用 okrData 作为显示数据
+        let displayData = okrData;
+
+        function updateTime() {
+            const now = new Date();
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+            const timeElement = document.getElementById('updateTime');
+            if (timeElement) {
+                timeElement.textContent = now.toLocaleDateString('zh-CN', options);
+            }
+        }
+
+        function calculateProgress(keyResults) {
+            let totalProgress = 0;
+            keyResults.forEach(kr => {
+                totalProgress += kr.progress || 0;
+            });
+            return keyResults.length > 0 ? Math.round(totalProgress / keyResults.length) : 0;
+        }
+
+        // 生成汇总表格
+        function renderSummaryTable() {
+            const tbody = document.getElementById('summaryTableBody');
+            if (!tbody) return;
+
+            let html = '';
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月'];
+
+            // 收集所有数据并计算每个维度的行数
+            const dimensionRows = {};
+            let rowIndex = 0;
+
+            Object.keys(displayData).forEach(dimensionKey => {
+                const dimension = displayData[dimensionKey];
+                const dimensionName = dimension.name;
+
+                // 计算该维度有多少行（所有OKR的所有keyResults）
+                let rowCount = 0;
+                dimension.okrs.forEach(okr => {
+                    rowCount += okr.keyResults.length;
+                });
+
+                dimensionRows[dimensionKey] = {
+                    name: dimensionName,
+                    rowCount: rowCount,
+                    startRow: rowIndex
+                };
+
+                rowIndex += rowCount;
+            });
+
+            // 生成表格行
+            Object.keys(displayData).forEach(dimensionKey => {
+                const dimension = displayData[dimensionKey];
+                const dimensionName = dimension.name;
+                const dimensionInfo = dimensionRows[dimensionKey];
+
+                let keyResultIndex = 0;
+
+                dimension.okrs.forEach(okr => {
+                    okr.keyResults.forEach(kr => {
+                        const isFirstRow = keyResultIndex === 0;
+
+                        html += `
+                            <tr>
+                                <td class="dimension-name" ${isFirstRow ? `rowspan="${dimensionInfo.rowCount}"` : 'style="display:none;"'}>${dimensionName}</td>
+                                <td class="indicator-name" title="${kr.text}">${kr.text}</td>
+                                <td class="h1-target">${kr.h1Target}</td>
+                        `;
+
+                        months.forEach(month => {
+                            const monthlyData = kr.monthlyData && kr.monthlyData[month];
+                            const actual = monthlyData ? monthlyData.actual : 0;
+                            const progress = monthlyData ? monthlyData.progress : 0;
+
+                            // 根据进度确定颜色类
+                            let colorClass = '';
+                            if (progress >= 90) {
+                                colorClass = 'good';
+                            } else if (progress >= 70) {
+                                colorClass = 'warning';
+                            } else if (progress > 0) {
+                                colorClass = 'danger';
+                            }
+
+                            html += `
+                                <td class="data-cell ${colorClass}">${actual}</td>
+                            `;
+                        });
+
+                        html += `</tr>`;
+                        keyResultIndex++;
+                    });
+                });
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function renderDimension(dimensionKey, dimension) {
+            // 获取当前月份的数据
+            const currentMonth = getCurrentMonth();
+
+            // 计算整体进度
+            let totalProgress = 0;
+            let totalResults = 0;
+            dimension.okrs.forEach(okr => {
+                okr.keyResults.forEach(kr => {
+                    // 从月度数据中获取当前进度
+                    const monthlyData = kr.monthlyData && kr.monthlyData[currentMonth];
+                    let progress = monthlyData ? monthlyData.progress : kr.progress || 0;
+
+                    // 如果是反向指标（越低越好），需要重新计算进度
+                    if (kr.reverse) {
+                        const actual = monthlyData ? monthlyData.actual : kr.actual || 0;
+                        const target = kr.h1Target;
+                        // 反向指标进度计算
+                        if (target === 0) {
+                            // 目标为0的情况：实际为0则100%，否则为0%
+                            progress = actual === 0 ? 100 : 0;
+                        } else if (actual <= target) {
+                            // 实际值 <= 目标值，进度100%
+                            progress = 100;
+                        } else {
+                            // 实际值 > 目标值，按比例递减
+                            progress = Math.max(0, Math.round((1 - (actual - target) / target) * 100));
+                        }
+                    }
+
+                    totalProgress += progress;
+                    totalResults++;
+                });
+            });
+            const overallProgress = totalResults > 0 ? Math.round(totalProgress / totalResults) : 0;
+
+            // 更新概览卡片
+            const overviewProgress = document.getElementById(`${dimensionKey}-overall-progress`);
+            const overviewPercentage = document.getElementById(`${dimensionKey}-overall-percentage`);
+            if (overviewProgress && overviewPercentage) {
+                overviewProgress.style.width = `${overallProgress}%`;
+                overviewPercentage.textContent = `${overallProgress}%`;
+            }
+
+            // 更新维度卡片
+            const dimProgress = document.getElementById(`${dimensionKey}-dim-progress`);
+            if (dimProgress) {
+                dimProgress.textContent = `${overallProgress}%`;
+            }
+
+            // 渲染OKR列表
+            const container = document.getElementById(`${dimensionKey}-okr-list`);
+            if (!container) return;
+
+            let html = '';
+            dimension.okrs.forEach(okr => {
+                html += `
+                    <div class="okr-item">
+                        <div class="okr-objective">${okr.objective}</div>
+                        <div class="key-results">
+                `;
+
+                okr.keyResults.forEach((kr, krIndex) => {
+                    const chartId = `chart-${dimensionKey}-${krIndex}`;
+
+                    // 从月度数据中获取当前值和进度
+                    const monthlyData = kr.monthlyData && kr.monthlyData[currentMonth];
+                    const currentActual = monthlyData ? monthlyData.actual : kr.actual || 0;
+                    let currentProgress = monthlyData ? monthlyData.progress : kr.progress || 0;
+                    const currentNote = monthlyData ? monthlyData.note : kr.note || '';
+
+                    // 如果是反向指标（越低越好），需要重新计算进度
+                    if (kr.reverse) {
+                        const target = kr.h1Target;
+                        // 反向指标进度计算
+                        if (target === 0) {
+                            // 目标为0的情况：实际为0则100%，否则为0%
+                            currentProgress = currentActual === 0 ? 100 : 0;
+                        } else if (currentActual <= target) {
+                            // 实际值 <= 目标值，进度100%
+                            currentProgress = 100;
+                        } else {
+                            // 实际值 > 目标值，按比例递减
+                            currentProgress = Math.max(0, Math.round((1 - (currentActual - target) / target) * 100));
+                        }
+                    }
+
+                    html += `
+                        <div class="key-result">
+                            <div class="key-result-text">
+                                <div style="font-weight: 600; margin-bottom: 4px;">${kr.text}</div>
+                                <div style="font-size: 11px; color: #666;">
+                                    H1目标: ${kr.h1Target} | 当前值: ${currentActual}
+                                    ${currentNote ? ` | ${currentNote}` : ''}
+                                </div>
+                            </div>
+                            <div class="key-result-progress">
+                                <div class="kr-progress-bar">
+                                    <div class="kr-progress-fill" style="width: ${currentProgress}%"></div>
+                                </div>
+                                <span class="kr-percentage">${currentProgress}%</span>
+                            </div>
+                            <div class="chart-section">
+                                <div class="chart-toggle">
+                                    <button class="active" onclick="showTrendChart('${chartId}', '${dimensionKey}', ${krIndex})">趋势</button>
+                                    <button onclick="showDeviationChart('${chartId}', '${dimensionKey}', ${krIndex})">偏差</button>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="${chartId}"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 获取当前月份
+        function getCurrentMonth() {
+            const now = new Date();
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const currentMonthName = monthNames[now.getMonth()];
+            return currentMonthName;
+        }
+
+        // 存储图表实例的字典
+        const chartInstances = {};
+
+        // 维度颜色映射
+        const dimensionColors = {
+            business: { main: '#667eea', light: 'rgba(102, 126, 234, 0.2)' },
+            evaluation: { main: '#f5576c', light: 'rgba(245, 87, 108, 0.2)' },
+            hr: { main: '#4facfe', light: 'rgba(79, 172, 254, 0.2)' },
+            safety: { main: '#43e97b', light: 'rgba(67, 233, 123, 0.2)' },
+            quality: { main: '#fa709a', light: 'rgba(250, 112, 154, 0.2)' }
+        };
+
+        // 获取月份的完整数据
+        function getMonthlyData(dimensionKey, krIndex) {
+            const dimension = okrData[dimensionKey];
+            if (!dimension || !dimension.okrs[0] || !dimension.okrs[0].keyResults[krIndex]) {
+                return null;
+            }
+
+            const kr = dimension.okrs[0].keyResults[krIndex];
+            const h1Target = kr.h1Target;
+            const monthlyData = kr.monthlyData || {};
+
+            const allMonths = ['1月', '2月', '3月', '4月', '5月', '6月'];
+            const currentMonth = getCurrentMonth();
+
+            // 只显示到当前月份
+            const months = allMonths.filter(month => {
+                const monthIndex = allMonths.indexOf(month);
+                const currentMonthIndex = allMonths.indexOf(currentMonth);
+                return monthIndex <= currentMonthIndex;
+            });
+
+            const actualValues = [];
+            const progressValues = [];
+            const deviations = [];
+
+            months.forEach(month => {
+                const data = monthlyData[month] || { actual: 0, progress: 0, note: '' };
+                actualValues.push(data.actual);
+                progressValues.push(data.progress);
+                // 计算偏差: (实际值 - 目标值) / 目标值 * 100
+                const deviation = h1Target !== 0 ? ((data.actual - h1Target) / h1Target * 100).toFixed(2) : 0;
+                deviations.push(parseFloat(deviation));
+            });
+
+            return {
+                h1Target,
+                months,
+                actualValues,
+                progressValues,
+                deviations
+            };
+        }
+
+        // 显示趋势图
+        function showTrendChart(chartId, dimensionKey, krIndex) {
+            const ctx = document.getElementById(chartId);
+            if (!ctx) return;
+
+            // 更新按钮状态
+            const buttons = ctx.parentElement.parentElement.querySelectorAll('.chart-toggle button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            buttons[0].classList.add('active');
+
+            // 销毁现有图表
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
+            }
+
+            const data = getMonthlyData(dimensionKey, krIndex);
+            if (!data) return;
+
+            const colors = dimensionColors[dimensionKey] || dimensionColors.business;
+
+            chartInstances[chartId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [{
+                        label: '实际值',
+                        data: data.actualValues,
+                        borderColor: colors.main,
+                        backgroundColor: colors.light,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }, {
+                        label: 'H1目标',
+                        data: Array(data.months.length).fill(data.h1Target),
+                        borderColor: '#ff6b6b',
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 10 },
+                                boxWidth: 12
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 显示偏差图
+        function showDeviationChart(chartId, dimensionKey, krIndex) {
+            const ctx = document.getElementById(chartId);
+            if (!ctx) return;
+
+            // 更新按钮状态
+            const buttons = ctx.parentElement.parentElement.querySelectorAll('.chart-toggle button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            buttons[1].classList.add('active');
+
+            // 销毁现有图表
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
+            }
+
+            const data = getMonthlyData(dimensionKey, krIndex);
+            if (!data) return;
+
+            const colors = dimensionColors[dimensionKey] || dimensionColors.business;
+
+            // 根据偏差正负设置颜色
+            const backgroundColors = data.deviations.map(d => d >= 0 ? 'rgba(67, 233, 123, 0.7)' : 'rgba(255, 107, 107, 0.7)');
+            const borderColors = data.deviations.map(d => d >= 0 ? '#43e97b' : '#ff6b6b');
+
+            chartInstances[chartId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.months,
+                    datasets: [{
+                        label: '偏差 (%)',
+                        data: data.deviations,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 10 },
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    return `偏差: ${value}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: {
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initDashboard() {
+            console.log('初始化看板...');
+
+            // 加载保存的数据
+            loadSavedData();
+
+            updateTime();
+
+            // 渲染汇总表格
+            renderSummaryTable();
+
+            // 渲染所有维度
+            Object.keys(displayData).forEach(dimensionKey => {
+                console.log(`渲染维度: ${dimensionKey}`);
+                renderDimension(dimensionKey, displayData[dimensionKey]);
+            });
+
+            // 初始化所有图表
+            setTimeout(() => {
+                Object.keys(displayData).forEach(dimensionKey => {
+                    const dimension = displayData[dimensionKey];
+                    dimension.okrs.forEach((okr, okrIndex) => {
+                        okr.keyResults.forEach((kr, krIndex) => {
+                            const chartId = `chart-${dimensionKey}-${krIndex}`;
+                            showTrendChart(chartId, dimensionKey, krIndex);
+                        });
+                    });
+                });
+            }, 500);
+
+            // 添加动画
+            setTimeout(() => {
+                document.querySelectorAll('.progress-fill').forEach(fill => {
+                    fill.style.transition = 'width 1s ease-out';
+                });
+            }, 100);
+
+            console.log('看板初始化完成');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initDashboard);
+
+        // 每分钟更新时间
+        setInterval(updateTime, 60000);
+
+        // 导出报告功能 - 导出为图片
+        function exportReport() {
+            console.log('开始导出报告...');
+
+            // 获取上个月的月份数字
+            const currentDate = new Date();
+            let lastMonthNum = currentDate.getMonth() - 1; // 上个月的数字(0-11)
+            let reportYear = currentDate.getFullYear();
+
+            // 如果当前是1月(0)，上个月是12月(11)，年份减1
+            if (lastMonthNum < 0) {
+                lastMonthNum = 11; // 12月
+                reportYear -= 1;
+            }
+
+            const lastMonth = lastMonthNum + 1; // 转换为1-12
+            const year = reportYear;
+
+            console.log(`报告月份：${year}年${lastMonth}月`);
+
+            // 获取看板容器
+            const dashboardContainer = document.getElementById('dashboard-container');
+            if (!dashboardContainer) {
+                console.error('找不到看板容器');
+                alert('找不到看板内容');
+                return;
+            }
+
+            // 获取需要隐藏的元素
+            const dashboardTitle = document.getElementById('dashboard-title');
+            const headerInfo = document.getElementById('header-info');
+
+            // 保存原始显示状态
+            const titleDisplay = dashboardTitle ? dashboardTitle.style.display : '';
+            const infoDisplay = headerInfo ? headerInfo.style.display : '';
+
+            // 临时隐藏header中的元素
+            if (dashboardTitle) dashboardTitle.style.display = 'none';
+            if (headerInfo) headerInfo.style.display = 'none';
+
+            // 显示加载提示
+            alert('正在生成报告图片，请稍候...');
+
+            // 使用html2canvas将看板转换为图片
+            html2canvas(dashboardContainer, {
+                scale: 2, // 提高图片质量
+                useCORS: true, // 允许跨域
+                backgroundColor: '#f5f5f5', // 背景色
+                logging: true, // 开启日志
+                width: dashboardContainer.offsetWidth,
+                height: dashboardContainer.offsetHeight
+            }).then(canvas => {
+                console.log('图片生成成功');
+
+                // 恢复header元素的显示
+                if (dashboardTitle) dashboardTitle.style.display = titleDisplay;
+                if (headerInfo) headerInfo.style.display = infoDisplay;
+
+                // 创建临时标题元素
+                const reportTitle = `消费者硬工事业部-硬件制造业务部管理月报（${lastMonth}月）`;
+                const reportDate = `${year}年${lastMonth}月`;
+                const exportDate = currentDate.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+                // 创建一个新的canvas来添加标题
+                const newCanvas = document.createElement('canvas');
+                const ctx = newCanvas.getContext('2d');
+
+                // 设置新画布的尺寸（加上标题的高度）
+                const titleHeight = 150;
+                newCanvas.width = canvas.width;
+                newCanvas.height = canvas.height + titleHeight;
+
+                // 填充背景色
+                ctx.fillStyle = '#f5f5f5';
+                ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+                // 绘制装饰性标题背景
+                const titleBgGradient = ctx.createLinearGradient(0, 0, newCanvas.width, 0);
+                titleBgGradient.addColorStop(0, '#667eea');
+                titleBgGradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = titleBgGradient;
+                ctx.fillRect(0, 0, newCanvas.width, titleHeight);
+
+                // 绘制标题
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 42px Microsoft YaHei';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(reportTitle, newCanvas.width / 2, 50);
+
+                // 绘制副标题（报告周期）
+                ctx.fillStyle = '#e8e8e8';
+                ctx.font = 'bold 20px Microsoft YaHei';
+                ctx.fillText(`报告周期：${reportDate}`, newCanvas.width / 2, 90);
+
+                // 绘制导出时间
+                ctx.fillStyle = '#d0d0d0';
+                ctx.font = '16px Microsoft YaHei';
+                ctx.fillText(`导出时间：${exportDate}`, newCanvas.width / 2, 120);
+
+                // 将原看板图片绘制到新画布上
+                ctx.drawImage(canvas, 0, titleHeight);
+
+                // 下载图片
+                const link = document.createElement('a');
+                link.download = `管理月报-${year}${String(lastMonth).padStart(2, '0')}.png`;
+                link.href = newCanvas.toDataURL('image/png');
+                link.click();
+
+                console.log('图片导出成功');
+                alert('报告图片导出成功！');
+            }).catch(error => {
+                console.error('生成图片失败：', error);
+
+                // 恢复header元素的显示
+                if (dashboardTitle) dashboardTitle.style.display = titleDisplay;
+                if (headerInfo) headerInfo.style.display = infoDisplay;
+
+                alert('生成图片失败，请检查浏览器控制台查看错误信息');
+            });
+        }
+    </script>
+</body>
+</html>
